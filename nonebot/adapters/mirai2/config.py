@@ -10,16 +10,16 @@ class Config(BaseModel):
     :配置项:
 
       - ``verify_key`` / ``mirai_verify_key``: mirai-api-http 的 verify_key
-      - ``mirai_host``: mirai-api-http 的地址
-      - ``mirai_port``: mirai-api-http 的端口
+      - ``mirai_url``: mirai-api-http 的地址, domain.com/path
+      - ``mirai_ssl``: 是否启用ssl
       - ``mirai_qq``: mirai-api-http qq 列表
     """
 
     verify_key: str = Field(
         ..., alias="mirai_verify_key"
     )
-    mirai_host: str
-    mirai_port: str
+    mirai_url: str
+    mirai_ssl: bool = False
     mirai_qq: List[int]
 
     class Config:

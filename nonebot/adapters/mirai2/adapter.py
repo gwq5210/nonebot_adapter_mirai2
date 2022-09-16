@@ -33,6 +33,13 @@ class Adapter(BaseAdapter):
         super().__init__(driver, **kwargs)
         self.mirai_config: Config = Config(**self.config.dict())
         self.connections: Dict[str, WebSocket] = {}
+        self.mirai_ws_url = f'ws://{self.mirai_config.mirai_url}'
+        if self.mirai_config.mirai_ssl:
+            self.mirai_ws_url = f'wss://{self.mirai_config.mirai_url}'
+        if self.mirai_ws_url.endswith("/"):
+            self.mirai_ws_url += "all"
+        else:
+            self.mirai_ws_url += "/all"
         self.tasks: List['asyncio.Task'] = []
         self.setup()
 
@@ -62,10 +69,7 @@ class Adapter(BaseAdapter):
     async def _client(self, self_qq: int):
         request = Request(
             "GET",
-            URL("ws://{host}:{port}/all".format(
-                host=self.mirai_config.mirai_host,
-                port=self.mirai_config.mirai_port
-            )),
+            URL(self.mirai_ws_url),
             headers={
                 "verifyKey": self.mirai_config.verify_key,
                 "qq": self_qq
@@ -73,13 +77,13 @@ class Adapter(BaseAdapter):
             timeout=3
         )
 
+        log.info(f"WebSocket Connection to {self.mirai_ws_url}?qq={self_qq}")
         while True:
             try:
                 async with self.websocket(request) as ws:
-                    log.debug(
+                    log.info(
                         "WebSocket Connection to "
-                        f'ws://{self.mirai_config.mirai_host}:{self.mirai_config.mirai_port}/all?'  # noqa
-                        f'qq={self_qq} established'
+                        f'{self.mirai_ws_url}?qq={self_qq} established'  # noqa
                     )
                     data = await ws.receive()
                     json_data = json.loads(data)
@@ -90,7 +94,7 @@ class Adapter(BaseAdapter):
                     await self.ws_event(ws, self_qq, json_data)
 
             except ConnectionRefusedError as e:
-                log.warn(f"connection error ({self_qq}):{e} ")
+                log.error(f"connection error ({self_qq}):{e} ")
                 break
             await asyncio.sleep(3)
 
